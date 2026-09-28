@@ -1,0 +1,10 @@
+# Blueprint do Render — Conversor Geo
+services:
+  - type: web
+    name: conversor-geo
+    runtime: docker
+    plan: free
+    region: virginia        # mais próxima do Brasil entre as disponíveis
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true

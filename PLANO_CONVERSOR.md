@@ -1,0 +1,122 @@
+# PLANO_CONVERSOR.md — Plano de implantação
+
+Status: [ ] pendente · [~] em andamento · [x] concluída
+
+---
+
+## [ ] Etapa 0 — Base do projeto e deploy de fumaça
+**Objetivo:** repositório estruturado, motor geodésico como módulo testado e app mínimo
+publicado no Render (valida Docker e health check logo no início).
+
+**Arquivos:** `CLAUDE.md`, `PLANO_CONVERSOR.md`, `requirements.txt`, `requirements-dev.txt`,
+`Dockerfile`, `render.yaml`, `main.py`, `core/geodesia/motor_geodesico.py`,
+`tests/test_motor_geodesico.py`.
+
+**Tarefas:**
+- Copiar `motos_geodesico.py` para `core/geodesia/motor_geodesico.py` acrescentando apenas `import math`.
+- Testes do motor contra `pyproj` (EPSG 4674 ↔ 31982 e mais um fuso, ex. 31983):
+  ida geo→UTM, volta UTM→geo e ida-e-volta.
+- Teste que confirma o nome dos EPSG UTM usados (31960+fuso S, 31954+fuso N).
+- Testes do `sexagesimal_para_decimal` com os formatos da planilha SIGEF (`48 32 28,781 W`).
+- Publicar no Render e configurar o UptimeRobot em `/health`.
+
+**Aceite:** diferença motor × pyproj < 1 mm em E/N e < 0,00001" em lat/lon;
+app no ar respondendo `{"status": "ok"}` em `/health`.
+
+**Verificar (sem alterar a fórmula):** o 4º retorno de `utm_para_lat_lon`
+(convergência meridiana) é uma aproximação — comparar com pyproj e registrar a diferença.
+
+**Teste manual:** abrir a URL do Render; aguardar 20 min sem uso e confirmar que o app não hibernou.
+
+---
+
+## [ ] Etapa 1 — Modelo interno e sistemas de referência
+**Objetivo:** estrutura única de feições e conversão de qualquer entrada para SIRGAS 2000 geográfico.
+
+**Arquivos:** `core/modelo.py`, `core/crs.py`, `tests/test_crs.py`.
+
+**Conteúdo:**
+- `Estilo` (cor RGB, espessura, tipo de linha), `Feicao` (tipo ponto/linha/polígono/texto,
+  coordenadas float64 com Z opcional, layer, estilo, texto, atributos), `Projeto` (feições + layers + CRS de origem).
+- `SistemaRef`: geográfico (decimal ou GMS) ou UTM (fuso 17–25, hemisfério N/S).
+- Aviso quando pontos caem a mais de 3° do meridiano central do fuso informado.
+- Sugestão de fuso pela longitude.
+
+**Aceite:** ida-e-volta UTM → geo → UTM < 1 mm; aviso de fuso disparado em caso de teste.
+
+---
+
+## [ ] Etapa 2 — Leitores DXF e SIGEF
+**Objetivo:** reconhecer pontos, linhas, polígonos e textos.
+
+**Arquivos:** `core/leitores/dxf.py`, `core/leitores/sigef.py`, testes e dados de exemplo.
+
+**Regras DXF:** POINT/INSERT → ponto (nome do bloco em atributo); LINE, polyline aberta,
+ARC, SPLINE → linha; polyline fechada, CIRCLE, HATCH → polígono; bulges e arcos discretizados;
+cores ByLayer/ByBlock resolvidas (ACI e true color); TEXT/MTEXT associado ao ponto mais próximo
+dentro da tolerância, senão texto solto.
+
+**Regras SIGEF:** ler só as abas `perimetro_N` (a aba `identificacao` não é lida — sem
+nome/CPF); coordenadas GMS ou UTM
+conforme "Tipo de Coordenada"; gerar vértices (com sigmas, h, método, tipo de limite),
+segmentos (limite + confrontante/CNS/matrícula) e polígono da parcela.
+
+**Aceite:** contagens corretas no DXF de teste; `SIGEF.ods` de exemplo gera os vértices
+FBSC-M/P/V com coordenadas iguais às da planilha.
+
+---
+
+## [ ] Etapa 3 — Escritores KML/KMZ e Shapefile
+**Arquivos:** `core/escritores/kml.py`, `core/escritores/shp.py`, `assets/circulo.png`.
+
+**KML/KMZ:** pasta por layer; cor ACI/RGB → `aabbggrr`; espessura mantida; ícone círculo
+embutido no KMZ e colorido por IconStyle; texto atrelado a ponto = rótulo sem ícone
+(IconStyle scale 0); texto solto = placemark só com rótulo.
+**Limitação conhecida:** tracejados não existem no KML.
+
+**SHP:** `_pontos`, `_linhas`, `_poligonos` (com Z quando houver); campos `LAYER`, `COR`,
+`TEXTO` + atributos SIGEF (nomes ≤ 10 caracteres); `.prj` do EPSG escolhido; `.cpg` UTF-8; ZIP.
+
+**Aceite:** abrir no Google Earth e no QGIS com cores, layers, ícones e textos corretos.
+
+---
+
+## [ ] Etapa 4 — Leitores KML/SHP e escritor DXF
+**Arquivos:** `core/leitores/kml.py`, `core/leitores/shp.py`, `core/escritores/dxf.py`.
+
+- KML/KMZ: pastas → layers; estilos → true color; Placemark só com nome → TEXT.
+- SHP: ler `.prj` (se ausente, pedir o sistema ao usuário); campo de layer, se existir.
+- DXF de saída: layers com cor, textos, Z; UTM ou geográfico (graus decimais).
+
+**Aceite:** DXF → KML → DXF preserva coordenadas (resíduo < 1 mm após reprojeção), layers e cores.
+
+---
+
+## [ ] Etapa 5 — DWG via ODA File Converter
+**Arquivos:** `core/leitores/dwg.py`, `core/escritores/dwg.py`, `Dockerfile`.
+
+- Instalar ODA File Converter (Linux x64) no container; usar `ezdxf.addons.odafc`.
+- Testar execução headless (`QT_QPA_PLATFORM=offscreen` ou `xvfb-run`).
+- Conferir os termos de licença da ODA para uso em servidor público.
+
+**Aceite:** um DWG real do curso converte nos dois sentidos; tempo e memória dentro do Render Free.
+
+---
+
+## [ ] Etapa 6 — Interface NiceGUI
+**Arquivos:** `ui/pagina_principal.py`, `ui/mapa.py`, `ui/formularios.py`, `main.py`.
+
+- Upload; escolha do sistema de entrada (fuso/hemisfério só quando UTM).
+- Mapa com fundo de satélite, painel de layers (ligar/desligar) e resumo de feições.
+- Escolha da saída; UTM desabilitado para KML; download do arquivo/ZIP.
+- Mensagens de erro em linguagem de agrimensor; nada gravado em disco.
+
+**Aceite:** fluxo completo com os quatro tipos de entrada, sem traceback na tela.
+
+---
+
+## [ ] Etapa 7 — Documentação e publicação final
+- README (uso, limitações, formatos), manual para alunos, revisão do `CLAUDE.md`.
+- Conferir uso de memória e tempo de conversão com arquivos grandes no Render.
+
+**Aceite:** aluno consegue converter um arquivo seguindo só o manual.
