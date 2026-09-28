@@ -19,7 +19,7 @@ from ui.mapa import Mapa, cor_hex, hex_para_rgb
 log = logging.getLogger(__name__)
 
 COR_TEMA = "#66BB6A"   # verde claro
-TAMANHO_MAX_MB = 50
+TAMANHO_MAX_MB = 10   # o app não se destina a arquivos grandes (RAM do Render Free: 512 MB)
 
 SISTEMAS = {"GEO": "Geodésicas (graus decimais)", "UTM": "UTM"}
 NOTAS_ENTRADA = {

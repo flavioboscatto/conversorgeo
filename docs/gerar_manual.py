@@ -297,7 +297,7 @@ passos([
     "fica travado em geodésicas; para a planilha SIGEF o sistema é lido da própria planilha "
     "(campo “Tipo de Coordenada”); para Shapefile vale o .prj, e o sistema escolhido só é "
     "usado se o ZIP não tiver .prj.",
-    "Arrastar o arquivo para a área de envio (ou clicar no **+**). Limite: 50 MB. Aparece "
+    "Arrastar o arquivo para a área de envio (ou clicar no **+**). Limite: 10 MB por arquivo. Aparece "
     "a mensagem “Arquivo recebido”.",
     "Clicar em **Mostrar arquivo na imagem**. O arquivo é lido, desenhado sobre a imagem e "
     "entra na lista **Arquivos importados**, com o formato, o sistema e a contagem de pontos, "
