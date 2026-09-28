@@ -1,7 +1,7 @@
 # Blueprint do Render — Conversor Geo
 services:
   - type: web
-    name: conversor-geo
+    name: conversorgeo      # igual ao serviço criado no painel (conversorgeo.onrender.com)
     runtime: docker
     plan: free
     region: virginia        # mais próxima do Brasil entre as disponíveis

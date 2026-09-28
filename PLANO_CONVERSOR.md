@@ -16,7 +16,9 @@ baixar”. Pendentes: testes manuais (Google Earth, QGIS, arquivos reais do curs
 
 ## [~] Etapa 0 — Base do projeto e deploy de fumaça
 **Situação:** motor movido e testado (65 testes ok), app local respondendo `/health`,
-código no GitHub. **Deploy no Render e UptimeRobot adiados** para depois do desenvolvimento local.
+código no GitHub. Deploy no Render feito em 2026-09-28: https://conversorgeo.onrender.com
+(`/health` ok; upload, SIGEF → KML e exportação de imagem testados no ar).
+Pendentes: UptimeRobot em `/health` e o teste manual de 20 min sem hibernar.
 **Objetivo:** repositório estruturado, motor geodésico como módulo testado e app mínimo
 publicado no Render (valida Docker e health check logo no início).
 
