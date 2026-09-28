@@ -2,9 +2,21 @@
 
 Status: [ ] pendente · [~] em andamento · [x] concluída
 
+**Ordem de trabalho (decidida em 2026-09-28):** desenvolver e testar localmente no navegador
+(`.venv\Scripts\python.exe main.py`) antes de publicar no Render. A interface cresce a cada
+etapa: cada etapa entrega também a sua parte visível na tela; a Etapa 6 vira acabamento.
+
+**Situação em 2026-09-28:** Etapas 1 a 4 implementadas com testes automáticos (148 ok,
+incluindo DXF → KML → DXF e DXF → SHP → DXF com resíduo < 1 mm). Interface com upload,
+botão “Mostrar arquivo na imagem” (Esri World Imagery), painel de layers e “Converter e
+baixar”. Pendentes: testes manuais (Google Earth, QGIS, arquivos reais do curso), Etapa 5
+(DWG — fora por decisão: 4 entradas e 3 saídas), deploy no Render e Etapa 7.
+
 ---
 
-## [ ] Etapa 0 — Base do projeto e deploy de fumaça
+## [~] Etapa 0 — Base do projeto e deploy de fumaça
+**Situação:** motor movido e testado (65 testes ok), app local respondendo `/health`,
+código no GitHub. **Deploy no Render e UptimeRobot adiados** para depois do desenvolvimento local.
 **Objetivo:** repositório estruturado, motor geodésico como módulo testado e app mínimo
 publicado no Render (valida Docker e health check logo no início).
 
@@ -33,12 +45,16 @@ app no ar respondendo `{"status": "ok"}` em `/health`.
 ## [ ] Etapa 1 — Modelo interno e sistemas de referência
 **Objetivo:** estrutura única de feições e conversão de qualquer entrada para SIRGAS 2000 geográfico.
 
-**Arquivos:** `core/modelo.py`, `core/crs.py`, `tests/test_crs.py`.
+**Arquivos:** `core/modelo.py`, `core/crs.py`, `tests/test_crs.py`,
+`ui/pagina_principal.py`, `ui/formatos.py`.
+
+**Na tela:** conversor de um ponto (geográfico decimal/GMS ↔ UTM), fuso/hemisfério só
+quando UTM, sugestão de fuso pela longitude e aviso de fuso.
 
 **Conteúdo:**
 - `Estilo` (cor RGB, espessura, tipo de linha), `Feicao` (tipo ponto/linha/polígono/texto,
   coordenadas float64 com Z opcional, layer, estilo, texto, atributos), `Projeto` (feições + layers + CRS de origem).
-- `SistemaRef`: geográfico (decimal ou GMS) ou UTM (fuso 17–25, hemisfério N/S).
+- `SistemaRef`: geográfico (decimal ou GMS) ou UTM (fuso 17–25 S; 17–24 N — 25N não existe no EPSG).
 - Aviso quando pontos caem a mais de 3° do meridiano central do fuso informado.
 - Sugestão de fuso pela longitude.
 

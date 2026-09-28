@@ -64,6 +64,27 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 ## Convenções
 - Coordenadas sempre em float64; nunca float32.
 - Interface e mensagens em português do Brasil, vírgula decimal na tela.
+- Na tela, escrever **coordenadas geodésicas** (nunca "geográficas"). No código os nomes
+  `geografico`/`GEO` continuam.
+- Tema da interface: verde claro (`#66BB6A`).
+- Tela: **formato primeiro** (ex.: Entrada DXF → Saída KML), depois o sistema de coordenadas.
+  KML (entrada e saída) trava o sistema em geodésicas; SIGEF usa o sistema da planilha;
+  SHP usa o .prj (o sistema escolhido só vale sem .prj).
+- Por enquanto: 4 entradas (DXF, KML/KMZ, SHP, SIGEF) e 3 saídas (DXF, KML/KMZ, SHP); DWG adiado.
+- Fluxo: upload → **“Mostrar arquivo na imagem”** (lê e desenha sobre Esri World Imagery)
+  → “Converter e baixar”. Sem ponto digitado na entrada.
+- Múltiplas importações: cada arquivo com seu formato/sistema; saída **sempre um arquivo
+  único** (`juntar`); layer repetida ganha o nome do arquivo na frente.
+- Cor ACI 7 (branca no fundo preto do AutoCAD) entra como **preto**; no DXF de saída,
+  preto/branco são gravados como ACI 7. Cor trocada no painel de layers vale para mapa,
+  imagem e arquivos de saída (`recolorir`).
+- Imagem (croqui): vista atual do mapa em PNG/JPG, gerada no navegador — fundo Esri,
+  rótulos Esri opcionais e só as layers habilitadas; crédito da Esri sempre impresso.
+- Web Mercator (EPSG:3857) **não** é suportado por decisão: o usuário reprojeta antes.
+- `core/conversor.py` é a porta de entrada do núcleo (`ler`/`escrever`); ícone do KMZ é
+  gerado em código (`png_circulo`), sem arquivo em `assets/`.
+- Desenvolvimento local: `$env:DEV='1'; $env:PORT='8090'; .venv\Scripts\python.exe main.py`
+  (recarrega sozinho). DXF de teste: `python -m tests.exemplo_dxf` → `tests/dados/exemplo_utm22s.dxf`.
 - Erros explicados em linguagem de agrimensor, sem traceback para o usuário.
 - `core/` independente da interface (permite trocar NiceGUI por FastAPI no futuro).
 - Limite de RAM do Render Free: 512 MB — evitar cópias desnecessárias de geometrias grandes.

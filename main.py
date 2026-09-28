@@ -6,6 +6,8 @@ import os
 
 from nicegui import app, ui
 
+from ui import pagina_principal
+
 
 # --- Rota de saúde: leve, não abre página nem cria sessão NiceGUI ---
 @app.get('/health')
@@ -13,11 +15,10 @@ def health():
     return {'status': 'ok'}
 
 
-# --- Página provisória (substituída na Etapa 6) ---
+# --- Página principal (cresce a cada etapa) ---
 @ui.page('/')
 def pagina_inicial():
-    ui.label('Conversor Geo — DXF/DWG · KML · Shapefile · SIGEF').classes('text-h5')
-    ui.label('Em construção.')
+    pagina_principal.construir()
 
 
 if __name__ in {'__main__', '__mp_main__'}:
@@ -25,6 +26,6 @@ if __name__ in {'__main__', '__mp_main__'}:
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 8080)),  # Render define PORT
         title='Conversor Geo',
-        reload=False,
+        reload=os.environ.get('DEV') == '1',   # DEV=1 só na máquina local
         show=False,
     )
