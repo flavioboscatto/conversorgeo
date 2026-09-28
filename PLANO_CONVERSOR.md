@@ -133,7 +133,12 @@ embutido no KMZ e colorido por IconStyle; texto atrelado a ponto = rótulo sem �
 
 ---
 
-## [ ] Etapa 7 — Documentação e publicação final
+## [~] Etapa 7 — Documentação e publicação final
+**Situação (2026-09-28):** `README.md` e manual do aluno (`docs/Manual_Conversor_Geo.docx`,
+gerado por `docs/gerar_manual.py`) prontos; faltam as capturas de tela (marcadores [FIGURA N])
+e a revisão do professor. Decisão: o app **não** se destina a arquivos grandes — a conferência
+de memória/tempo com arquivos grandes foi retirada da etapa; vale o limite de upload da tela.
+
 - README (uso, limitações, formatos), manual para alunos, revisão do `CLAUDE.md`.
 - Conferir uso de memória e tempo de conversão com arquivos grandes no Render.
 

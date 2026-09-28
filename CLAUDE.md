@@ -93,6 +93,8 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 - Erros explicados em linguagem de agrimensor, sem traceback para o usuário.
 - `core/` independente da interface (permite trocar NiceGUI por FastAPI no futuro).
 - Limite de RAM do Render Free: 512 MB — evitar cópias desnecessárias de geometrias grandes.
+  O app **não se destina a arquivos grandes** (decisão do usuário); vale o limite de upload
+  da tela (`TAMANHO_MAX_MB` em `ui/pagina_principal.py`).
 - EPSG SIRGAS 2000: 4674 (geográfico); UTM Sul = 31960 + fuso (ex.: 31982 = 22S);
   UTM Norte = 31954 + fuso (ex.: 31976 = 22N) **só para fusos 17N–22N**; 23N = 6210 e
   24N = 6211 (31954+23 = 31977 é o 17S!). Conferido por teste na Etapa 0.
