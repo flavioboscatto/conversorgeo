@@ -80,6 +80,11 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
   imagem e arquivos de saída (`recolorir`).
 - Imagem (croqui): vista atual do mapa em PNG/JPG, gerada no navegador — fundo Esri,
   rótulos Esri opcionais e só as layers habilitadas; crédito da Esri sempre impresso.
+- Fundo do mapa: **Esri World Imagery (padrão)** ou **Ortofoto SC 2012** (WMS aberto do
+  SIGSC, camada `OrtoRGB-Landsat-2012`, 0,39 m, só SC; PNG transparente por cima da Esri).
+  Bing descartado (serviço em encerramento); Google/Mapbox/MapTiler exigem chave.
+- Rótulos: nenhum / Esri (números de endereço a partir do zoom 18) / **OpenStreetMap** (só
+  nomes de ruas, via Overpass API no navegador, zoom ≥ 15, 3 tentativas — o serviço oscila).
 - Web Mercator (EPSG:3857) **não** é suportado por decisão: o usuário reprojeta antes.
 - `core/conversor.py` é a porta de entrada do núcleo (`ler`/`escrever`); ícone do KMZ é
   gerado em código (`png_circulo`), sem arquivo em `assets/`.

@@ -27,6 +27,10 @@ _CABECALHO = """
              text-shadow:0 0 3px #000, 0 0 2px #000; }
 .leaflet-tooltip.cg-tooltip::before { display:none; }
 .cg-popup td { padding:1px 6px 1px 0; vertical-align:top; }
+.cg-rua { position:absolute; white-space:nowrap; pointer-events:none; color:#fff;
+          font:600 12px/1 Roboto, sans-serif; -webkit-text-stroke:3px #000; paint-order:stroke fill; }
+.cg-aviso-ruas { background:rgba(255,255,255,.9); padding:2px 8px; border-radius:4px;
+                 font:12px Roboto, sans-serif; color:#333; }
 </style>
 <script>
 window.cgGrupos = window.cgGrupos || {};
@@ -72,18 +76,252 @@ window.cgAlternar = function (id, nome, visivel) {
   if (visivel) g.addTo(map); else map.removeLayer(g);
 };
 
-window.cgRotulosEsri = function (id, ligado) {
+// ---------------------------------------------------------------- fundo
+// 'esri' (padrão) ou 'sc': ortofoto do aerolevantamento de SC 2010–2012 (0,39 m), WMS aberto.
+// PNG transparente por cima da Esri: fora de SC a Esri continua aparecendo.
+const CG_SC_WMS = 'https://sigsc.sc.gov.br/sigserver/SIGSC/wms';
+const CG_SC_CAIXA = [[-29.4785, -54.0992], [-25.8239, -48.1126]];   // L ainda não existe aqui
+const CG_SC_CREDITO = 'Ortofotos &copy; SDE/SC (2012)';
+window.cgFundos = window.cgFundos || {};
+
+window.cgFundo = function (id, fundo) {
+  const map = getElement(id).map;
+  let f = window.cgFundos[id];
+  if (!f) {
+    const Aviso = L.Control.extend({onAdd: () => L.DomUtil.create('div', 'cg-aviso-ruas')});
+    f = window.cgFundos[id] = {modo: 'esri', aviso: new Aviso({position: 'topright'}),
+      sc: L.tileLayer.wms(CG_SC_WMS, {layers: 'OrtoRGB-Landsat-2012', format: 'image/png',
+        transparent: true, version: '1.3.0', crossOrigin: 'anonymous', maxZoom: 21,
+        zIndex: 2, attribution: CG_SC_CREDITO})};
+    map.on('moveend', () => cgAvisoFundo(id));
+  }
+  f.modo = fundo;
+  if (fundo === 'sc') { f.sc.addTo(map); f.aviso.addTo(map); }
+  else { map.removeLayer(f.sc); f.aviso.remove(); }
+  cgAvisoFundo(id);
+};
+
+function cgAvisoFundo(id) {
+  const f = window.cgFundos[id];
+  if (!f || f.modo !== 'sc' || !f.aviso.getContainer()) return;
+  const fora = !L.latLngBounds(CG_SC_CAIXA).intersects(getElement(id).map.getBounds());
+  const el = f.aviso.getContainer();
+  el.textContent = fora ? 'Ortofoto SC só cobre Santa Catarina — aqui aparece a imagem Esri' : '';
+  el.style.display = fora ? '' : 'none';
+}
+
+// ---------------------------------------------------------------- rótulos
+// modo: 'nenhum' | 'esri' (tiles de referência da Esri) | 'osm' (só nomes de ruas do
+// OpenStreetMap, buscados na Overpass API e escritos ao longo das ruas, sem números)
+const CG_OVERPASS = 'https://overpass-api.de/api/interpreter';
+const CG_TENTATIVAS = 3;       // o Overpass público oscila (504 em horário de pico)
+const CG_ZOOM_MIN_RUAS = 15;
+const CG_OSM_CREDITO = 'Ruas &copy; colaboradores do OpenStreetMap';
+const CG_FONTE_RUA = '600 12px Roboto, sans-serif';
+window.cgRuas = window.cgRuas || {};
+
+window.cgRotulosModo = function (id, modo) {
   const map = getElement(id).map;
   if (!window.cgRotulos[id]) {
-    const op = {maxZoom: 21, maxNativeZoom: 19, crossOrigin: 'anonymous',
+    const op = {maxZoom: 21, maxNativeZoom: 19, crossOrigin: 'anonymous', zIndex: 5,
                 attribution: 'Rótulos &copy; Esri'};
     window.cgRotulos[id] = L.layerGroup([
       L.tileLayer(CG_ESRI_REF + 'World_Transportation/MapServer/tile/{z}/{y}/{x}', op),
       L.tileLayer(CG_ESRI_REF + 'World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', op),
     ]);
   }
-  if (ligado) window.cgRotulos[id].addTo(map); else map.removeLayer(window.cgRotulos[id]);
+  if (modo === 'esri') window.cgRotulos[id].addTo(map); else map.removeLayer(window.cgRotulos[id]);
+
+  let st = window.cgRuas[id];
+  if (!st) {
+    st = window.cgRuas[id] = {ativo: false, vias: [], caixa: null, pedindo: false,
+                              grupo: L.layerGroup(), aviso: null};
+    const Aviso = L.Control.extend({onAdd: () => L.DomUtil.create('div', 'cg-aviso-ruas')});
+    st.aviso = new Aviso({position: 'topright'});
+    map.on('moveend', () => cgAtualizarRuas(id));
+  }
+  const ligar = modo === 'osm';
+  if (ligar === st.ativo) return;
+  st.ativo = ligar;
+  if (ligar) {
+    st.grupo.addTo(map);
+    st.aviso.addTo(map);
+    map.attributionControl.addAttribution(CG_OSM_CREDITO);
+    cgAtualizarRuas(id);
+  } else {
+    map.removeLayer(st.grupo);
+    st.aviso.remove();
+    map.attributionControl.removeAttribution(CG_OSM_CREDITO);
+  }
 };
+
+function cgAvisoRuas(st, texto) {
+  const el = st.aviso.getContainer();
+  if (!el) return;
+  el.textContent = texto;
+  el.style.display = texto ? '' : 'none';
+}
+
+async function cgBuscarVias(caixa, aoTentar) {
+  const b = [caixa.getSouth(), caixa.getWest(), caixa.getNorth(), caixa.getEast()]
+    .map(v => v.toFixed(6)).join(',');
+  const tipos = 'motorway|trunk|primary|secondary|tertiary|unclassified|residential|' +
+    'living_street|pedestrian|road|service|motorway_link|trunk_link|primary_link|' +
+    'secondary_link|tertiary_link';
+  const q = `[out:json][timeout:25];way["highway"~"^(${tipos})$"]["name"](${b});out geom;`;
+  for (let n = 1; n <= CG_TENTATIVAS; n++) {
+    if (aoTentar) aoTentar(n);
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 25000);
+      const r = await fetch(CG_OVERPASS, {method: 'POST', signal: ctl.signal,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'data=' + encodeURIComponent(q)});
+      clearTimeout(t);
+      if (r.ok) {
+        const j = await r.json();
+        return j.elements.filter(e => e.geometry && e.tags && e.tags.name);
+      }
+    } catch (e) { /* tempo esgotado ou rede: tenta de novo */ }
+    if (n < CG_TENTATIVAS) await new Promise(res => setTimeout(res, 2000 * n));
+  }
+  throw new Error('Overpass indisponível');
+}
+
+async function cgAtualizarRuas(id) {
+  const st = window.cgRuas[id];
+  if (!st || !st.ativo) return;
+  const map = getElement(id).map;
+  if (map.getZoom() < CG_ZOOM_MIN_RUAS) {
+    st.grupo.clearLayers();
+    cgAvisoRuas(st, 'Aproxime o mapa para ver os nomes de ruas');
+    return;
+  }
+  const vista = map.getBounds();
+  if (!st.caixa || !st.caixa.contains(vista)) {
+    if (st.pedindo) return;
+    st.pedindo = true;
+    cgAvisoRuas(st, 'Buscando nomes de ruas…');
+    try {
+      const caixa = vista.pad(0.5);
+      st.vias = await cgBuscarVias(caixa, n => cgAvisoRuas(st, n === 1
+        ? 'Buscando nomes de ruas…'
+        : `Servidor ocupado — tentando de novo (${n} de ${CG_TENTATIVAS})…`));
+      st.caixa = caixa;
+      cgAvisoRuas(st, '');
+    } catch (e) {
+      cgAvisoRuas(st, 'Servidor do OpenStreetMap indisponível — mova o mapa para tentar de novo');
+      st.pedindo = false;
+      return;
+    }
+    st.pedindo = false;
+    if (!st.caixa.contains(map.getBounds())) return cgAtualizarRuas(id);   // mapa andou
+  }
+  cgDesenharRuasMapa(id);
+}
+
+// Posição e ângulo de cada nome, em pixels da vista atual. Mesmo cálculo para tela e imagem.
+function cgCalcularRotulosRuas(map, vias) {
+  const cv = document.createElement('canvas').getContext('2d');
+  cv.font = CG_FONTE_RUA;
+  const tam = map.getSize();
+  const vista = L.bounds([8, 8], [tam.x - 8, tam.y - 8]);
+  const prioridade = {motorway: 0, trunk: 1, primary: 2, secondary: 3, tertiary: 4};
+  const ordenadas = [...vias].sort((a, b) =>
+    (prioridade[a.tags.highway] ?? 5) - (prioridade[b.tags.highway] ?? 5));
+  const colocados = [];
+  for (const via of ordenadas) {
+    const texto = via.tags.name;
+    const larg = cv.measureText(texto).width;
+    const todos = via.geometry.map(g => map.latLngToContainerPoint([g.lat, g.lon]));
+    // só a parte visível: recorta cada segmento na borda da tela
+    const pedacos = [];
+    let atual = null;
+    for (let k = 0; k < todos.length - 1; k++) {
+      const seg = L.LineUtil.clipSegment(todos[k], todos[k + 1], vista, false, false);
+      if (!seg) { atual = null; continue; }
+      if (atual && atual[atual.length - 1].distanceTo(seg[0]) < 0.01) atual.push(seg[1]);
+      else pedacos.push(atual = [seg[0], seg[1]]);
+    }
+    // trechos quase retos (desvio < 20°) formam uma "corrida"; o nome vai na mais longa
+    let melhor = null;
+    for (const pts of pedacos) {
+      let i = 0;
+      while (i < pts.length - 1) {
+        let j = i + 1;
+        const ang0 = Math.atan2(pts[j].y - pts[i].y, pts[j].x - pts[i].x);
+        let comp = pts[i].distanceTo(pts[j]);
+        while (j < pts.length - 1) {
+          const a = Math.atan2(pts[j + 1].y - pts[j].y, pts[j + 1].x - pts[j].x);
+          let d = Math.abs(a - ang0) % (2 * Math.PI);
+          if (d > Math.PI) d = 2 * Math.PI - d;
+          if (d > 0.35) break;
+          comp += pts[j].distanceTo(pts[j + 1]);
+          j++;
+        }
+        if (!melhor || comp > melhor.comp) melhor = {pts, i, j, comp};
+        i = j;
+      }
+    }
+    if (!melhor || melhor.comp < larg + 16) continue;
+    const pts = melhor.pts;
+    // ponto na metade do comprimento da corrida
+    let resta = melhor.comp / 2, x = pts[melhor.i].x, y = pts[melhor.i].y;
+    for (let k = melhor.i; k < melhor.j; k++) {
+      const s = pts[k].distanceTo(pts[k + 1]);
+      if (resta <= s) {
+        x = pts[k].x + (pts[k + 1].x - pts[k].x) * resta / s;
+        y = pts[k].y + (pts[k + 1].y - pts[k].y) * resta / s;
+        break;
+      }
+      resta -= s;
+    }
+    let ang = Math.atan2(pts[melhor.j].y - pts[melhor.i].y, pts[melhor.j].x - pts[melhor.i].x);
+    if (ang > Math.PI / 2) ang -= Math.PI;          // texto sempre de pé
+    if (ang < -Math.PI / 2) ang += Math.PI;
+    const c = Math.abs(Math.cos(ang)), s = Math.abs(Math.sin(ang));
+    const hw = (c * larg + s * 14) / 2, hh = (s * larg + c * 14) / 2;
+    if (colocados.some(o => Math.abs(o.x - x) < o.hw + hw + 4 && Math.abs(o.y - y) < o.hh + hh + 4))
+      continue;
+    if (colocados.some(o => o.texto === texto && Math.hypot(o.x - x, o.y - y) < 250)) continue;
+    colocados.push({x, y, ang, texto, hw, hh});
+  }
+  return colocados;
+}
+
+function cgDesenharRuasMapa(id) {
+  const st = window.cgRuas[id];
+  const map = getElement(id).map;
+  st.grupo.clearLayers();
+  for (const r of cgCalcularRotulosRuas(map, st.vias)) {
+    const d = document.createElement('div');
+    d.className = 'cg-rua';
+    d.style.transform = `translate(-50%, -50%) rotate(${r.ang}rad)`;
+    d.textContent = r.texto;
+    L.marker(map.containerPointToLatLng([r.x, r.y]), {interactive: false, keyboard: false,
+      icon: L.divIcon({className: '', iconSize: [0, 0], html: d})}).addTo(st.grupo);
+  }
+}
+
+function cgDesenharRuasImagem(map, id, ctx) {
+  const st = window.cgRuas[id];
+  if (!st || !st.ativo || map.getZoom() < CG_ZOOM_MIN_RUAS) return false;
+  ctx.save();
+  ctx.font = CG_FONTE_RUA;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  for (const r of cgCalcularRotulosRuas(map, st.vias)) {
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    ctx.rotate(r.ang);
+    ctx.lineWidth = 3.5; ctx.strokeStyle = '#000'; ctx.strokeText(r.texto, 0, 0);
+    ctx.fillStyle = '#fff'; ctx.fillText(r.texto, 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+  return true;
+}
 
 // Seta de norte (superior esquerdo, abaixo do zoom) e escala em barra (inferior direito).
 window.cgPreparar = function (id) {
@@ -194,9 +432,15 @@ window.cgExportar = async function (id, formato, nome) {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, r0.width, r0.height);
 
-    for (const img of el.querySelectorAll('.leaflet-tile-pane img.leaflet-tile-loaded')) {
-      const r = img.getBoundingClientRect();
-      ctx.drawImage(img, r.left - r0.left, r.top - r0.top, r.width, r.height);
+    // camadas de tiles na ordem de exibição (zIndex): Esri, ortofoto SC, rótulos Esri
+    const camadasTile = [...el.querySelectorAll('.leaflet-tile-pane > .leaflet-layer')]
+      .map((c, i) => [parseInt(c.style.zIndex || '0', 10), i, c])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    for (const [, , c] of camadasTile) {
+      for (const img of c.querySelectorAll('img.leaflet-tile-loaded')) {
+        const r = img.getBoundingClientRect();
+        ctx.drawImage(img, r.left - r0.left, r.top - r0.top, r.width, r.height);
+      }
     }
     cgDesenharFeicoes(map, id, ctx);
     ctx.font = '600 12px Roboto, sans-serif';
@@ -209,10 +453,19 @@ window.cgExportar = async function (id, formato, nome) {
       ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.strokeText(t.innerText, x, y);
       ctx.fillStyle = '#fff'; ctx.fillText(t.innerText, x, y);
     }
+    const ruasOsm = cgDesenharRuasImagem(map, id, ctx);
     cgDesenharNorte(ctx, 12, 12);
     cgDesenharEscala(map, ctx, r0.width, r0.height);
-    const credito = (map.hasLayer(window.cgRotulos[id] || L.layerGroup()) ?
-      'Imagens e rótulos' : 'Imagens') + ' © Esri, Maxar, Earthstar Geographics';
+    const fundo = window.cgFundos[id];
+    const scAtivo = !!fundo && fundo.modo === 'sc' && map.hasLayer(fundo.sc);
+    const soSC = scAtivo && L.latLngBounds(CG_SC_CAIXA).contains(map.getBounds());
+    const esri = 'Esri, Maxar, Earthstar Geographics';
+    const credito = [
+      soSC ? 'Ortofotos © SDE/SC (2012)'
+           : scAtivo ? `Ortofotos © SDE/SC (2012) e imagens © ${esri}` : `Imagens © ${esri}`,
+      map.hasLayer(window.cgRotulos[id] || L.layerGroup()) ? 'Rótulos © Esri' : '',
+      ruasOsm ? 'Ruas © colaboradores do OpenStreetMap' : '',
+    ].filter(Boolean).join(' · ');
     ctx.font = '11px Roboto, sans-serif';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
@@ -306,7 +559,7 @@ class Mapa:
         self.leaflet.clear_layers()
         self.leaflet.tile_layer(url_template=ESRI_URL, options={
             "maxZoom": 21, "maxNativeZoom": 19, "attribution": ESRI_CREDITO,
-            "crossOrigin": "anonymous"})       # necessário para exportar a imagem
+            "crossOrigin": "anonymous", "zIndex": 1})   # crossOrigin: para exportar a imagem
         self.leaflet.on("init", lambda: self._js(f"cgPreparar({self.leaflet.id})"))
 
     def _js(self, codigo: str, timeout: float = 1.0):
@@ -330,9 +583,15 @@ class Mapa:
         self._js(f"cgAlternar({self.leaflet.id}, {json.dumps(nome)}, "
                  f"{'true' if visivel else 'false'})")
 
-    async def rotulos_esri(self, ligado: bool) -> None:
+    async def fundo(self, modo: str) -> None:
+        """modo: 'esri' (padrão) ou 'sc' (ortofoto SC 2012, só cobre Santa Catarina)."""
         await self.leaflet.initialized()
-        self._js(f"cgRotulosEsri({self.leaflet.id}, {'true' if ligado else 'false'})")
+        self._js(f"cgFundo({self.leaflet.id}, {json.dumps(modo)})")
+
+    async def rotulos(self, modo: str) -> None:
+        """modo: 'nenhum', 'esri' ou 'osm' (só nomes de ruas, do OpenStreetMap)."""
+        await self.leaflet.initialized()
+        self._js(f"cgRotulosModo({self.leaflet.id}, {json.dumps(modo)})")
 
     async def exportar_imagem(self, formato: str, nome: str) -> str:
         """Baixa a vista atual como PNG/JPG. Retorna 'ok' ou a mensagem de erro do navegador."""

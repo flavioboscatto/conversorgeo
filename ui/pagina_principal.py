@@ -123,8 +123,15 @@ def construir():
             with ui.column().classes("w-64 max-md:w-full gap-4"):
                 with ui.card().classes("w-full"):
                     ui.label("Imagem").classes("text-subtitle1 text-weight-medium")
-                    rotulos = ui.checkbox("Nomes de ruas e lugares (Esri)", value=False) \
-                        .props("dense")
+                    ui.label("Imagem de fundo").classes("text-caption text-grey-8")
+                    fundo = ui.radio({"esri": "Esri (atual)",
+                                      "sc": "Ortofoto SC 2012 (só SC)"},
+                                     value="esri").props("dense")
+                    ui.label("Rótulos").classes("text-caption text-grey-8")
+                    rotulos = ui.radio({"nenhum": "Sem rótulos",
+                                        "esri": "Esri (ruas e lugares)",
+                                        "osm": "OpenStreetMap (só nomes de ruas)"},
+                                       value="nenhum").props("dense")
                     formato_img = ui.toggle({"png": "PNG", "jpg": "JPG"}, value="png") \
                         .props("dense")
                     botao_img = ui.button("Exportar imagem", icon="image") \
@@ -347,7 +354,8 @@ def construir():
     botao_mostrar.on_click(mostrar_arquivo)
     botao_limpar.on_click(limpar_importacao)
     botao_img.on_click(exportar_imagem)
-    rotulos.on_value_change(lambda e: mapa.rotulos_esri(e.value))
+    rotulos.on_value_change(lambda e: mapa.rotulos(e.value))
+    fundo.on_value_change(lambda e: mapa.fundo(e.value))
     ajustar_upload()
     mostrar_lista()
     mostrar_layers(None)
