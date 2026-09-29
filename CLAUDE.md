@@ -32,7 +32,8 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 - Interface NiceGUI; hospedagem Render Free com UptimeRobot chamando `/health` a cada
   5 min. Só este serviço pode ficar acordado 24 h (cota de 750 h/mês da conta).
 - Endereço público: **https://conversorgeo.com.br** (DNS no Registro.br; `www` redireciona
-  para a raiz). `conversorgeo.onrender.com` continua ativo e não deve ser desligado.
+  para a raiz). `conversorgeo.onrender.com` continua ativo (não desligar no Render), mas o
+  `main.py` redireciona com 301 para o domínio próprio; só `/health` responde nele.
 - Build Filters do Render ignoram `docs/**`, `tests/**`, `README.md`, `CLAUDE.md` e
   `PLANO_CONVERSOR.md` (commits só de documentação não geram deploy).
 - Entradas: DXF, DWG, KML/KMZ, SHP (.zip), SIGEF (.ods). Saídas: DXF, DWG, KML/KMZ, SHP.
