@@ -16,7 +16,7 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 VERDE = RGBColor(0x2E, 0x7D, 0x32)
-URL = "https://conversorgeo.onrender.com"
+URL = "https://conversorgeo.com.br"
 ACESSO = "Acesso em: 28 set. 2026."
 SAIDA = Path(__file__).with_name("Manual_Conversor_Geo.docx")
 

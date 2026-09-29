@@ -5,7 +5,7 @@ Aplicativo web para converter levantamentos entre **DXF**, **KML/KMZ** e **Shape
 ortofoto e exportação de **croqui de localização** (PNG/JPG).
 Feito para o Curso Técnico em Agrimensura do IFSC.
 
-**No ar:** https://conversorgeo.onrender.com
+**No ar:** https://conversorgeo.com.br
 **Manual do aluno:** [`docs/Manual_Conversor_Geo.docx`](docs/Manual_Conversor_Geo.docx)
 
 ## Formatos
@@ -63,6 +63,7 @@ $env:DEV='1'; $env:PORT='8090'; .venv\Scripts\python.exe main.py
   de exemplo em `tests/dados/`.
 - `docs/gerar_manual.py` — gera o manual (requer `python-docx`, fora das dependências do app).
 
-Deploy: Render (plano Free, Docker, health check em `/health`), mantido acordado por
-monitor externo. Regras de trabalho e decisões do projeto em [`CLAUDE.md`](CLAUDE.md);
+Deploy: Render (plano Free, Docker, health check em `/health`), domínio próprio
+`conversorgeo.com.br` (DNS no Registro.br; `www` redireciona para a raiz), mantido acordado
+por monitor externo. Regras de trabalho e decisões do projeto em [`CLAUDE.md`](CLAUDE.md);
 etapas em [`PLANO_CONVERSOR.md`](PLANO_CONVERSOR.md).
