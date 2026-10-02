@@ -34,6 +34,13 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 - Endereço público: **https://conversorgeo.com.br** (DNS no Registro.br; `www` redireciona
   para a raiz). `conversorgeo.onrender.com` continua ativo (não desligar no Render), mas o
   `main.py` redireciona com 301 para o domínio próprio; só `/health` responde nele.
+- Site (Etapa 9): páginas `/`, `/como-usar`, `/sobre`, `/privacidade`, `/contato` com o mesmo
+  cabeçalho/menu e rodapé (`ui/layout.py`; cabeçalho não fixo por causa do celular); textos
+  em `ui/paginas_info.py` (Markdown). `/robots.txt` e `/sitemap.xml` no `main.py`.
+  Contato: **conversorgeo@gmail.com**. Divulgação particular: o site **não cita o IFSC**.
+- AdSense (`ui/anuncios.py`) só liga com a variável `ADSENSE_CLIENT=ca-pub-…` no Render
+  (publica `/ads.txt` e o script); blocos com `ADSENSE_SLOT_FAIXA`, `_LATERAL`, `_CONTEUDO`.
+  A Privacidade troca o texto de publicidade sozinha conforme a variável. Sem anúncio sobre o mapa.
 - Build Filters do Render ignoram `docs/**`, `tests/**`, `README.md`, `CLAUDE.md` e
   `PLANO_CONVERSOR.md` (commits só de documentação não geram deploy).
 - Entradas: DXF, DWG, KML/KMZ, SHP (.zip), SIGEF (.ods). Saídas: DXF, DWG, KML/KMZ, SHP.
@@ -74,9 +81,25 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 - Tela: **formato primeiro** (ex.: Entrada DXF → Saída KML), depois o sistema de coordenadas.
   KML (entrada e saída) trava o sistema em geodésicas; SIGEF usa o sistema da planilha;
   SHP usa o .prj (o sistema escolhido só vale sem .prj).
-- Por enquanto: 4 entradas (DXF, KML/KMZ, SHP, SIGEF) e 3 saídas (DXF, KML/KMZ, SHP); DWG adiado.
+- 5 entradas (DXF, KML/KMZ, SHP, SIGEF, TXT/CSV) e 3 saídas (DXF, KML/KMZ, SHP).
+  **DWG fora de vez** (decisão de 2026-10-02): salvar como DXF no CAD.
+- TXT/CSV (`core/leitores/txt.py`, Etapa 8): usuário aponta as colunas (nome, E/lon, N/lat,
+  h, código) num painel que aparece após o upload; separador e cabeçalho detectados e
+  corrigíveis. Sistemas: UTM, geodésicas decimais ou **gg,mmss** (opção extra só para TXT;
+  `SistemaRef.gms=True`); sul/oeste com sinal negativo. Código → layer (cor da `PALETA`).
+  Geometria: só pontos, ou pontos + linha/polígono na ordem do arquivo — **todos os pontos**
+  (padrão; layer `LIGACAO`) ou **por código** (uma por layer; só aparece com coluna de código).
+  Erros apontam o número da linha do arquivo.
+- gg,mmss é convertido por `ggmmss_para_decimal` (lê o texto, completa com zeros à direita).
+  **Não usar** `MotorGeodesico.sexagesimal_para_decimal` para valores compactos de 1 bloco:
+  ele completa com zeros à esquerda (`zfill`) e só acerta com exatamente 8 dígitos após a
+  vírgula (`-27,3543092` viraria 27°03'54"). Motor não alterado (regra 5); o formato com
+  espaços da planilha SIGEF (`27 35 43,092 S`) segue correto.
 - Fluxo: upload → **“Mostrar arquivo na imagem”** (lê e desenha sobre Esri World Imagery)
   → “Converter e baixar”. Sem ponto digitado na entrada.
+- **Editar importação** (✎ na lista): o item guarda o arquivo original, o sistema da tela e as
+  escolhas do TXT; editar volta tudo para a entrada e “Atualizar na imagem” substitui o item
+  no mesmo lugar (mesmo id/prefixo). Arquivo novo durante a edição vira importação nova.
 - Múltiplas importações: cada arquivo com seu formato/sistema; saída **sempre um arquivo
   único** (`juntar`); layer repetida ganha o nome do arquivo na frente.
 - Cor ACI 7 (branca no fundo preto do AutoCAD) entra como **preto**; no DXF de saída,

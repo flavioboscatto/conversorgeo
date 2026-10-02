@@ -113,7 +113,9 @@ embutido no KMZ e colorido por IconStyle; texto atrelado a ponto = rótulo sem �
 
 ---
 
-## [ ] Etapa 5 — DWG via ODA File Converter
+## [—] Etapa 5 — DWG via ODA File Converter
+**Descartada em 2026-10-02** (decisão do usuário): DWG fica de fora; salvar como DXF no CAD.
+
 **Arquivos:** `core/leitores/dwg.py`, `core/escritores/dwg.py`, `Dockerfile`.
 
 - Instalar ODA File Converter (Linux x64) no container; usar `ezdxf.addons.odafc`.
@@ -146,3 +148,41 @@ de memória/tempo com arquivos grandes foi retirada da etapa; vale o limite de u
 - Conferir uso de memória e tempo de conversão com arquivos grandes no Render.
 
 **Aceite:** aluno consegue converter um arquivo seguindo só o manual.
+
+---
+
+## [~] Etapa 8 — Entrada TXT/CSV com colunas escolhidas
+**Situação (2026-10-02):** implementada e testada (`core/leitores/txt.py`, `tests/test_txt.py`,
+painel de colunas em `ui/pagina_principal.py`; exemplos em `tests/dados/exemplo_txt_*`).
+Conferida no navegador: UTM 22S (CSV `;` com cabeçalho) e gg,mmss (tabulação, sem cabeçalho)
+caem no mesmo lugar. Falta: teste do usuário e seção no manual do aluno.
+
+- Extensões `.txt` e `.csv`; separador `;`, tabulação, vírgula ou espaço (detectado, corrigível);
+  cabeçalho detectado; decimal com vírgula ou ponto.
+- Colunas: E/Longitude e N/Latitude obrigatórias; nome, h/Z e código opcionais.
+- Sistemas: UTM (fuso/hemisfério), geodésicas decimais, geodésicas gg,mmss; sul/oeste negativos.
+- Código → layer. Geometria: só pontos / pontos + linha / pontos + polígono, na ordem do
+  arquivo, ligando todos os pontos (padrão, layer LIGACAO) ou por código (uma por layer);
+  grupo com poucos pontos gera aviso.
+
+**Aceite:** arquivo de estação total/GNSS do curso importado só com o painel, sem editar o arquivo.
+
+---
+
+## [~] Etapa 9 — Conteúdo do site e AdSense (opção A)
+Plano combinado em 2026-09-29; e-mail de contato **conversorgeo@gmail.com**. Usuário decidiu
+não mexer no AdSense por enquanto.
+
+**Situação (2026-10-02):** Fase 1 implementada (`ui/layout.py`, `ui/paginas_info.py`,
+`ui/anuncios.py`, rotas no `main.py`, testes em `tests/test_main.py`) e conferida no navegador
+(desktop e celular). AdSense desligado: sem `ADSENSE_CLIENT`, nenhum script, `/ads.txt` = 404 e
+a Privacidade diz que o site não exibe anúncios. Pendente: nome do responsável
+(`RESPONSAVEL` em `ui/paginas_info.py`), Fases 2 e 3.
+
+- Fase 1 (sem cadastro): páginas `/como-usar`, `/sobre`, `/privacidade` (LGPD), `/contato`;
+  links no cabeçalho e rodapé; `robots.txt` e `sitemap.xml`; ganchos do AdSense (`<head>`,
+  `/ads.txt`, espaços de anúncio) ligados só pelas variáveis `ADSENSE_CLIENT`/`ADSENSE_SLOT_*`.
+- Fase 2 (~1 mês depois): conta AdSense, variável no Render, pedido de análise, mensagem de
+  consentimento do Google para visitantes da Europa.
+- Fase 3 (após aprovação): blocos responsivos fora do mapa; conferir desktop/celular e croqui.
+- Pode ser feito já, sem código: Google Search Console (registro TXT no Registro.br).
