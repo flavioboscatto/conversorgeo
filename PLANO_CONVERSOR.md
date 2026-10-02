@@ -155,7 +155,9 @@ de memória/tempo com arquivos grandes foi retirada da etapa; vale o limite de u
 **Situação (2026-10-02):** implementada e testada (`core/leitores/txt.py`, `tests/test_txt.py`,
 painel de colunas em `ui/pagina_principal.py`; exemplos em `tests/dados/exemplo_txt_*`).
 Conferida no navegador: UTM 22S (CSV `;` com cabeçalho) e gg,mmss (tabulação, sem cabeçalho)
-caem no mesmo lugar. Falta: teste do usuário e seção no manual do aluno.
+caem no mesmo lugar. Testada pelo usuário e publicada (8f33b80). Manual do aluno v1.1 com a
+seção 4.3, o exemplo 5.3, erros e exercícios de TXT/CSV (2026-10-02); falta a captura de tela
+da FIGURA 3 (quadro Colunas do arquivo), junto das demais figuras.
 
 - Extensões `.txt` e `.csv`; separador `;`, tabulação, vírgula ou espaço (detectado, corrigível);
   cabeçalho detectado; decimal com vírgula ou ponto.

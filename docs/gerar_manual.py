@@ -17,7 +17,7 @@ from docx.shared import Cm, Pt, RGBColor
 
 VERDE = RGBColor(0x2E, 0x7D, 0x32)
 URL = "https://conversorgeo.com.br"
-ACESSO = "Acesso em: 28 set. 2026."
+ACESSO = "Acesso em: 2 out. 2026."
 SAIDA = Path(__file__).with_name("Manual_Conversor_Geo.docx")
 
 doc = Document()
@@ -181,12 +181,12 @@ p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 p.add_run("Manual do Aluno").font.size = Pt(18)
 p = doc.add_paragraph()
 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-p.add_run("Conversão entre DXF, KML/KMZ, Shapefile e planilha SIGEF, "
+p.add_run("Conversão entre DXF, KML/KMZ, Shapefile, planilha SIGEF e pontos em TXT/CSV, "
           "com visualização sobre imagem e croqui de localização").italic = True
 for _ in range(8):
     doc.add_paragraph()
 for linha in ("Curso Técnico em Agrimensura", "Instituto Federal de Santa Catarina — IFSC",
-              f"Endereço do aplicativo: {URL}", "Versão 1.0 — setembro de 2026"):
+              f"Endereço do aplicativo: {URL}", "Versão 1.1 — outubro de 2026"):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.add_run(linha)
@@ -205,6 +205,8 @@ itens([
     "hemisfério) de acordo com a origem de cada arquivo;",
     "**converter** levantamentos entre DXF, KML/KMZ e Shapefile, inclusive a partir da "
     "planilha do SIGEF;",
+    "**importar** pontos de arquivos TXT/CSV, indicando as colunas e o formato das "
+    "coordenadas (UTM, graus decimais ou gg,mmss);",
     "**conferir** o resultado sobre imagem de satélite ou ortofoto antes de usá-lo;",
     "**identificar** as mensagens de aviso do aplicativo e corrigir a causa de cada uma;",
     "**produzir** um croqui de localização em imagem (PNG ou JPG) com norte, escala e rótulos.",
@@ -214,8 +216,9 @@ itens([
 titulo("2 Contexto prático", 1)
 par("No escritório de agrimensura, o mesmo levantamento circula por programas diferentes: o "
     "desenho técnico é feito em CAD (DXF), o cliente confere a área no Google Earth (KML/KMZ), "
-    "o órgão ambiental ou a prefeitura pede Shapefile, e a certificação no INCRA parte da "
-    "planilha de dados do SIGEF. Cada conversão feita à mão é uma oportunidade de erro de "
+    "o órgão ambiental ou a prefeitura pede Shapefile, a certificação no INCRA parte da "
+    "planilha de dados do SIGEF e os pontos de campo chegam da estação total ou do receptor "
+    "GNSS em arquivos de texto (TXT/CSV). Cada conversão feita à mão é uma oportunidade de erro de "
     "fuso, de hemisfério ou de sistema de referência — erros que deslocam o imóvel de "
     "centenas de metros a centenas de quilômetros.")
 par("O Conversor Geo reúne essas conversões num só lugar, no navegador, sem instalação. "
@@ -257,6 +260,16 @@ tabela("Códigos EPSG usados pelo aplicativo (SIRGAS 2000)",
        "IOGP (2026); códigos conferidos por testes automáticos do aplicativo.")
 par("Esses códigos aparecem no arquivo `.prj` do Shapefile gerado e são úteis para "
     "configurar o SRC (sistema de referência de coordenadas) no QGIS.")
+par("Em arquivos de pontos é comum a notação compacta **gg,mmss**, usada por calculadoras e "
+    "programas de topografia: a parte inteira são os graus e, depois da vírgula, os dois "
+    "primeiros dígitos são os minutos, os dois seguintes os segundos e o restante a fração do "
+    "segundo. Sul e oeste levam **sinal negativo**. A conversão para graus decimais é:")
+p = doc.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p.add_run("graus decimais = ± (gg + mm / 60 + ss,sss / 3600)").bold = True
+par("Exemplo: −27,3543092 = 27°35'43,092\" S → −(27 + 35/60 + 43,092/3600) = "
+    "**−27,5953033°**. Minutos e segundos sempre menores que 60; quando faltam dígitos, "
+    "completa-se com zeros à direita (48,5 = 48°50'00\").")
 
 titulo("3.3 Formatos aceitos", 2)
 tabela("Entradas e saídas do Conversor Geo",
@@ -270,6 +283,9 @@ tabela("Entradas e saídas do Conversor Geo",
          "_pontos, _linhas e _poligonos, .prj e .cpg (UTF-8)."],
         ["Planilha SIGEF (.ods)", "Sim", "Não",
          "Lê só as abas perimetro_N. A aba de identificação (nome, CPF) não é lida."],
+        ["TXT / CSV (pontos)", "Sim", "Não",
+         "Colunas indicadas pelo usuário; UTM, graus decimais ou gg,mmss. Código vira layer; "
+         "pontos podem ser ligados em linha ou polígono."],
         ["DWG", "Não", "Não", "Salvar como DXF no programa de CAD antes de usar."]],
        [3.2, 1.7, 1.6, 9.5])
 
@@ -290,8 +306,8 @@ titulo("4.2 Importar um arquivo (Entrada)", 2)
 par("A tela segue a ordem **formato → sistema → arquivo**. Cada arquivo tem a sua própria "
     "configuração.")
 passos([
-    "Em **Formato**, escolher o tipo do arquivo: DXF, KML / KMZ, Shapefile (.zip) ou "
-    "Planilha SIGEF (.ods).",
+    "Em **Formato**, escolher o tipo do arquivo: DXF, KML / KMZ, Shapefile (.zip), "
+    "Planilha SIGEF (.ods) ou Texto TXT / CSV (colunas) — este último na seção 4.3.",
     "Em **Sistema de coordenadas**, escolher **Geodésicas (graus decimais)** ou **UTM**. "
     "Para UTM, informar o **Fuso** e o hemisfério (**Sul** ou **Norte**). Para KML o sistema "
     "fica travado em geodésicas; para a planilha SIGEF o sistema é lido da própria planilha "
@@ -305,7 +321,35 @@ passos([
 ])
 figura("quadro Entrada com formato DXF, sistema UTM fuso 22 Sul e arquivo recebido")
 
-titulo("4.3 Conferir no mapa", 2)
+titulo("4.3 Pontos em TXT ou CSV", 2)
+par("Arquivos de texto exportados da estação total, do receptor GNSS ou de uma planilha "
+    "(extensões `.txt` e `.csv`) não têm um padrão único de colunas. Por isso, o aplicativo "
+    "mostra o arquivo e pede que o usuário indique o que é cada coluna.")
+passos([
+    "Em **Formato**, escolher **Texto TXT / CSV (colunas)**. Em **Sistema de coordenadas**, "
+    "escolher **UTM** (com fuso e hemisfério), **Geodésicas (graus decimais)** ou "
+    "**Geodésicas (gg,mmss)** — esta terceira opção só existe para TXT/CSV. Nas geodésicas, "
+    "sul e oeste com sinal negativo.",
+    "Enviar o arquivo. Aparece o quadro **Colunas do arquivo**, com as primeiras linhas.",
+    "Conferir o **Separador** (ponto e vírgula, tabulação, vírgula ou espaço) e a caixa "
+    "**Primeira linha é cabeçalho**. Os dois são detectados automaticamente; se a prévia "
+    "aparecer com as colunas misturadas, trocar o separador.",
+    "Indicar as colunas: **E / Longitude** e **N / Latitude** (obrigatórias), **Nome do "
+    "ponto**, **h / Z** e **Código → layer** (opcionais). O aplicativo já sugere as colunas "
+    "pelos nomes do cabeçalho (Ponto, E, N, Cota, Código…) ou pela ordem dos dados.",
+    "Escolher a geometria: **Só pontos**, **Pontos e linha** ou **Pontos e polígono** (fecha "
+    "no primeiro ponto). Com coluna de código, escolher também como **ligar os pontos**: "
+    "**na sequência do arquivo (todos os pontos)** — uma linha ou polígono na layer "
+    "LIGACAO — ou **na sequência, por código** — um traçado por layer.",
+    "Clicar em **Mostrar arquivo na imagem**.",
+])
+nota("Atenção:", "a linha e o polígono seguem **a ordem das linhas do arquivo**. O aplicativo "
+     "não reordena os pontos: se o caminhamento estiver fora de ordem, o polígono sai "
+     "cruzado. Quando uma linha do arquivo tem problema, a mensagem informa o **número da "
+     "linha**.")
+figura("quadro Colunas do arquivo com separador, prévia, colunas indicadas e geometria")
+
+titulo("4.4 Conferir no mapa", 2)
 itens([
     "O mapa se ajusta ao arquivo. Conferir se o desenho caiu **no lugar certo** da imagem — "
     "esse é o principal controle de qualidade da conversão.",
@@ -318,18 +362,22 @@ itens([
 ])
 figura("mapa com a parcela do SIGEF sobre a imagem, painel de layers e janela de atributos")
 
-titulo("4.4 Vários arquivos numa saída única", 2)
+titulo("4.5 Vários arquivos numa saída única", 2)
 par("Repetir a seção 4.2 para cada arquivo — cada um com o seu formato e o seu sistema (um "
     "DXF em UTM e uma planilha SIGEF em geodésicas, por exemplo). Todos aparecem juntos no "
     "mapa, e a saída é **sempre um arquivo único** com tudo. Quando dois arquivos têm uma "
     "layer com o mesmo nome, a do segundo recebe o nome do arquivo na frente (ex.: "
     "`lote2_DIVISA`).")
 itens([
+    "O **✎ (Editar importação)** de cada item devolve o arquivo para a entrada com o formato, "
+    "o sistema e, no TXT/CSV, as colunas usadas. Corrigir o que for preciso (um fuso errado, "
+    "outra geometria) e clicar em **Atualizar na imagem**: o arquivo é substituído no mesmo "
+    "lugar da lista. **Cancelar edição** mantém o arquivo como estava.",
     "O **✕** de cada item da lista remove só aquele arquivo.",
     "**Limpar importação** remove todos os arquivos.",
 ])
 
-titulo("4.5 Converter e baixar (Saída)", 2)
+titulo("4.6 Converter e baixar (Saída)", 2)
 passos([
     "Em **Saída — arquivo único**, escolher o **Formato**: DXF, KML / KMZ ou Shapefile (.zip).",
     "Escolher o **Sistema de coordenadas** da saída. O fuso UTM já vem sugerido pelo arquivo "
@@ -349,7 +397,7 @@ tabela("O que cada saída contém",
                              "(nomes com até 10 caracteres), `.prj` e `.cpg`."]],
        [3.5, 12.5])
 
-titulo("4.6 Croqui de localização (imagem)", 2)
+titulo("4.7 Croqui de localização (imagem)", 2)
 passos([
     "No quadro **Imagem**, escolher a **Imagem de fundo**: **Esri (atual)** — padrão, "
     "cobertura mundial — ou **Ortofoto SC 2012 (só SC)**, do aerolevantamento do Estado de "
@@ -405,6 +453,29 @@ passos([
     "SIRGAS 2000 / UTM zone 22S (EPSG:31982).",
 ])
 
+titulo("5.3 Pontos de campo em CSV para DXF", 2)
+par("Arquivo: `exemplo_txt_utm22s.csv` (fornecido pelo professor), separado por ponto e "
+    "vírgula, com cabeçalho `Ponto;E;N;Cota;Codigo` e seis pontos em UTM 22 Sul: quatro "
+    "cantos de cerca (M1 a M4, código CERCA) e dois postes (P1 e P2, código POSTE), "
+    "intercalados na ordem do levantamento.")
+passos([
+    "Entrada: **Texto TXT / CSV (colunas)**, **UTM**, fuso **22**, **Sul**. Enviar o arquivo.",
+    "No quadro Colunas do arquivo, conferir o que foi detectado: separador **Ponto e "
+    "vírgula**, **cabeçalho marcado**, E = coluna 2, N = coluna 3, Nome = coluna 1, "
+    "h / Z = coluna 4 e Código = coluna 5.",
+    "Geometria **Pontos e polígono**; ligar os pontos **na sequência, por código**. Mostrar "
+    "na imagem.",
+    "Resumo esperado: **6 pontos · 0 linhas · 1 polígono · 0 textos**, nas layers CERCA e "
+    "POSTE. Aviso esperado: “Layer POSTE: só 2 ponto(s) — não deu para formar o polígono” — "
+    "correto, pois postes não formam polígono. O P1, que está no meio do arquivo, não "
+    "interfere no polígono da cerca, porque pertence a outro código.",
+    "Saída: **DXF**, **UTM** fuso **22 Sul**, **Converter e baixar**. No CAD, o ponto M1 deve "
+    "estar em **E = 742 519,448 m** e **N = 6 945 305,987 m**, com cota 4,00 m.",
+])
+par("Se a opção fosse **na sequência do arquivo (todos os pontos)**, o polígono passaria "
+    "também pelos postes, na ordem M1, M2, P1, M3, M4, P2, numa layer LIGACAO. A opção certa "
+    "depende de como o levantamento foi codificado.")
+
 # ------------------------------------------------------------------ 6 erros
 quebra()
 titulo("6 Erros comuns e cuidados", 1)
@@ -432,6 +503,12 @@ tabela("Mensagens do aplicativo: causa e solução",
          "Compactar juntos .shp, .shx, .dbf e .prj."],
         ["“O arquivo não parece ser um DXF válido”", "Arquivo DWG renomeado ou DXF corrompido.",
          "No CAD: Salvar como → DXF."],
+        ["“N linha(s) com problema … linha 1 …” (TXT/CSV)",
+         "Cabeçalho não marcado, separador errado ou coluna trocada.",
+         "Marcar “Primeira linha é cabeçalho”; conferir separador e colunas na prévia."],
+        ["“… não é Longitude válida” com gg,mmss",
+         "Minutos ou segundos ≥ 60, ou arquivo em graus decimais.",
+         "Conferir a notação no arquivo; escolher Geodésicas (graus decimais), se for o caso."],
         ["“Servidor do OpenStreetMap indisponível…”", "Serviço público de dados ocupado.",
          "Mover o mapa para tentar de novo, ou usar os rótulos Esri."]],
        [4.6, 5.0, 6.4])
@@ -451,6 +528,8 @@ itens([
     "imagem Esri. É uma ortofoto verdadeira (sem inclinação das edificações), mas "
     "desatualizada — construções recentes não aparecem.",
     "A imagem de fundo serve para **conferência visual e croqui**, não para medição.",
+    "No **TXT/CSV**, a linha e o polígono seguem a ordem do arquivo; conferir no mapa se o "
+    "traçado não cruza a si mesmo antes de converter.",
 ])
 
 # ------------------------------------------------------------------ 7 exercícios
@@ -471,6 +550,13 @@ passos([
     "Produzir um croqui de localização da parcela do SIGEF em JPG, com Ortofoto SC, rótulos "
     "do OpenStreetMap e só as layers PERIMETRO e VERTICES_M ligadas. Em que zoom os rótulos "
     "Esri passariam a mostrar números de endereço?",
+    "Um arquivo TXT traz a longitude `-48,3228781` no formato gg,mmss. Converter para graus "
+    "decimais, mostrando o cálculo, e indicar se o ponto está a leste ou a oeste de "
+    "Greenwich.",
+    "Um TXT de perímetro tem os vértices V1 (MARCO), V2 (PIQUETE), V3 (MARCO) e V4 (ÁRVORE), "
+    "na ordem do caminhamento. Com a coluna de código indicada e **Pontos e polígono**, qual "
+    "opção de **Ligar os pontos** gera o perímetro do imóvel? O que aconteceria com a outra "
+    "opção?",
     "Desafio: um DXF exportado do QGIS tem vértices com X ≈ −5 401 872 e Y ≈ −3 198 591. "
     "O aplicativo não o importa em UTM nem em geodésicas. Explicar a causa provável e o "
     "procedimento de correção.",
@@ -495,6 +581,13 @@ passos([
     "repetidos, portanto nenhum prefixo é acrescentado.",
     "Resposta prática (conferir a imagem). Os números de endereço aparecem a partir do "
     "**zoom 18** (barra de escala de 50 m).",
+    "48°32'28,781\" → 48 + 32/60 + 28,781/3600 = 48 + 0,5333333 + 0,0079947 = 48,5413281°. "
+    "Com o sinal negativo: **−48,5413281°**, a **oeste** de Greenwich (é a longitude do "
+    "vértice do exercício 1).",
+    "**Na sequência do arquivo (todos os pontos)**: um único polígono V1 → V2 → V3 → V4 na "
+    "layer LIGACAO, com os pontos ainda separados por código. **Por código**, o aplicativo "
+    "tentaria um polígono por layer: MARCO teria só 2 pontos, PIQUETE e ÁRVORE só 1 — "
+    "nenhum polígono seria formado, e apareceriam avisos.",
     "Os valores são de **Web Mercator (EPSG:3857)**, padrão de mapas web e de muitos projetos "
     "do QGIS, que o aplicativo não aceita. Reprojetar no QGIS (Exportar → Salvar feições "
     "como, com SRC SIRGAS 2000 / UTM zone 22S ou SIRGAS 2000 geodésico) e importar de novo.",
