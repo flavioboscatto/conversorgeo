@@ -113,7 +113,7 @@ embutido no KMZ e colorido por IconStyle; texto atrelado a ponto = rótulo sem �
 
 ---
 
-## [~] Etapa 5 — DWG só na entrada, via GNU LibreDWG
+## [x] Etapa 5 — DWG só na entrada, via GNU LibreDWG
 **Histórico:** o plano original (ODA File Converter, entrada e saída) foi descartado em
 2026-10-02 — o uso comercial (site com anúncios) exige assinatura paga da ODA. Reaberta em
 2026-10-07 com o **LibreDWG** (GPLv3, `dwg2dxf` chamado como programa separado), **só entrada**:
@@ -133,7 +133,8 @@ fonte conferida por SHA-256), `ferramentas/libredwg/` (exe + DLLs para o Windows
 
 **Teste (2026-10-07):** planialtimétrico real AC1032 (UTM 22S) do usuário: 0,3 s, 40 pontos,
 91 linhas, 21 polígonos, 105 textos, 11 layers, acentos e atributos de bloco corretos.
-**Pendente:** primeiro build no Render (compilação não testada localmente: sem Docker/WSL).
+**No ar (2026-10-07):** o 1º build falhou por falta de `pkg-config` no `configure`; corrigido
+(685daf8, passos separados e `make -j2`). Build concluído e DWG testado pelo usuário no site.
 
 **Aceite:** DWG real importa no ar (Render) com o mesmo resultado do teste local.
 
