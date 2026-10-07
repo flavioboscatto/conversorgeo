@@ -1,7 +1,7 @@
 # Conversor Geo
 
-Aplicativo web para converter levantamentos entre **DXF**, **KML/KMZ** e **Shapefile**, com a
-**planilha do SIGEF/INCRA (.ods)** e **TXT/CSV de pontos** como entradas, conferência sobre imagem de satélite ou
+Aplicativo web para converter levantamentos entre **DXF**, **KML/KMZ** e **Shapefile**, com
+**DWG**, a **planilha do SIGEF/INCRA (.ods)** e **TXT/CSV de pontos** como entradas, conferência sobre imagem de satélite ou
 ortofoto e exportação de **croqui de localização** (PNG/JPG).
 Feito para o Curso Técnico em Agrimensura do IFSC.
 
@@ -13,6 +13,7 @@ Feito para o Curso Técnico em Agrimensura do IFSC.
 | Formato | Entrada | Saída | Sistema |
 |---|---|---|---|
 | DXF | sim | sim | geodésicas ou UTM (informado pelo usuário) |
+| DWG | sim | — | como o DXF; até o formato AutoCAD 2018, via GNU LibreDWG (`dwg2dxf`) |
 | KML / KMZ | sim | sim | sempre geodésicas (WGS 84 ≡ SIRGAS 2000 para fins práticos) |
 | Shapefile (.zip) | sim | sim | lido do `.prj`; saída com `.prj` e `.cpg` UTF-8 |
 | Planilha SIGEF (.ods) | sim | — | lido da planilha; só as abas `perimetro_N` (a aba de identificação não é lida) |
@@ -42,7 +43,8 @@ Os arquivos ficam só na memória da sessão; nada é gravado no servidor.
 
 ## Limitações conhecidas
 
-- DWG não é aceito: salvar como DXF no CAD.
+- DWG: só entrada, até o formato 2018; imagens, nuvens de pontos e objetos do Civil 3D
+  não são lidos. Desenhos em coordenadas locais não são aceitos.
 - TXT/CSV: só pontos (com ou sem linha/polígono ligando-os); arquivos de equipamento com
   formato próprio precisam ser exportados como texto com colunas.
 - Web Mercator (EPSG:3857) e outros sistemas não são aceitos: reprojetar no QGIS antes.

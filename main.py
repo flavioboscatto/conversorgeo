@@ -62,10 +62,12 @@ paginas_info.registrar()   # /como-usar, /sobre, /privacidade, /contato
 
 
 if __name__ in {'__main__', '__mp_main__'}:
+    from core.leitores.dwg import executavel
+    print(f'Entrada DWG: {executavel() or "indisponível (dwg2dxf não encontrado)"}', flush=True)
     ui.run(
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 8080)),  # Render define PORT
-        title='Conversor Geo — DXF, KML, Shapefile, SIGEF e TXT',
+        title='Conversor Geo — DXF, DWG, KML, Shapefile, SIGEF e TXT',
         language='pt-BR',
         reload=os.environ.get('DEV') == '1',   # DEV=1 só na máquina local
         show=False,

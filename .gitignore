@@ -5,3 +5,4 @@ __pycache__/
 .nicegui/
 .env
 tests/dados/SIGEF.ods
+ferramentas/

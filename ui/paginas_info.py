@@ -31,8 +31,8 @@ def _responsavel() -> str:
 COMO_USAR = """
 # Como usar o Conversor Geo
 
-O Conversor Geo converte levantamentos entre **DXF**, **KML/KMZ** e **Shapefile**, lê a
-**planilha do SIGEF/INCRA** e arquivos de pontos em **TXT/CSV**, mostra tudo sobre imagem de
+O Conversor Geo converte levantamentos entre **DXF**, **KML/KMZ** e **Shapefile**, lê
+desenhos **DWG**, a **planilha do SIGEF/INCRA** e arquivos de pontos em **TXT/CSV**, mostra tudo sobre imagem de
 satélite e exporta um **croqui de localização** em PNG ou JPG. Todo o processamento usa o
 **SIRGAS 2000**.
 
@@ -41,12 +41,16 @@ satélite e exporta um **croqui de localização** em PNG ou JPG. Todo o process
 | Formato | Entrada | Saída | Sistema de coordenadas |
 |---|---|---|---|
 | DXF | sim | sim | geodésicas ou UTM, informado por você |
+| DWG (AutoCAD) | sim | — | geodésicas ou UTM, informado por você |
 | KML / KMZ | sim | sim | sempre geodésicas (WGS 84) |
 | Shapefile (.zip) | sim | sim | lido do `.prj`; a saída leva `.prj` e `.cpg` |
 | Planilha SIGEF (.ods) | sim | — | lido da planilha (só as abas `perimetro_N`) |
 | TXT / CSV (pontos) | sim | — | UTM, geodésicas decimais ou gg,mmss |
 
-DWG não é aceito: no programa de CAD, use *Salvar como → DXF*.
+O DWG é aceito só na **entrada**, até o formato do AutoCAD 2018 (o usado pelas versões
+recentes). Imagens e nuvens de pontos anexadas ao desenho são ignoradas, e objetos próprios do
+Civil 3D (pontos COGO, superfícies) não são lidos. O desenho precisa estar em coordenadas
+georreferenciadas (UTM ou geodésicas); desenhos em coordenadas locais não são aceitos.
 
 ## Passo a passo
 
@@ -115,7 +119,7 @@ pontos para o CAD — sem perder layers, cores e atributos.
 ## O que ele faz
 
 - Converte entre **DXF**, **KML/KMZ** e **Shapefile**, mantendo layers, cores, espessuras,
-  rótulos e atributos.
+  rótulos e atributos, e lê desenhos **DWG** do AutoCAD.
 - Lê a **planilha do SIGEF/INCRA** (vértices, limites e perímetro) e arquivos de pontos em
   **TXT/CSV** com as colunas que você indicar.
 - Mostra tudo sobre **imagem de satélite** para conferência e exporta **croqui de
@@ -132,7 +136,8 @@ cálculo próprio, conferido por testes automáticos contra a biblioteca de refe
 
 ## Limitações
 
-- Não aceita DWG (salvar como DXF) nem arquivos em Web Mercator ou em outros datums.
+- DWG só na entrada (até o formato AutoCAD 2018), sem objetos do Civil 3D.
+- Não aceita desenhos em coordenadas locais nem arquivos em Web Mercator ou em outros datums.
 - Não se destina a arquivos grandes: o limite é 10 MB por arquivo.
 - A imagem de fundo é para conferência visual, não para medição.
 

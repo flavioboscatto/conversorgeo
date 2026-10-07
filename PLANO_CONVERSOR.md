@@ -113,16 +113,29 @@ embutido no KMZ e colorido por IconStyle; texto atrelado a ponto = rótulo sem �
 
 ---
 
-## [—] Etapa 5 — DWG via ODA File Converter
-**Descartada em 2026-10-02** (decisão do usuário): DWG fica de fora; salvar como DXF no CAD.
+## [~] Etapa 5 — DWG só na entrada, via GNU LibreDWG
+**Histórico:** o plano original (ODA File Converter, entrada e saída) foi descartado em
+2026-10-02 — o uso comercial (site com anúncios) exige assinatura paga da ODA. Reaberta em
+2026-10-07 com o **LibreDWG** (GPLv3, `dwg2dxf` chamado como programa separado), **só entrada**:
+o LibreDWG não grava DWG nos formatos atuais.
 
-**Arquivos:** `core/leitores/dwg.py`, `core/escritores/dwg.py`, `Dockerfile`.
+**Arquivos:** `core/leitores/dwg.py`, `tests/test_dwg.py`, `tests/dados/exemplo_utm22s.dwg`
+(gerado do DXF de exemplo, formato 2000), `Dockerfile` (etapa que compila o `dwg2dxf` 0.14,
+fonte conferida por SHA-256), `ferramentas/libredwg/` (exe + DLLs para o Windows, fora do git).
 
-- Instalar ODA File Converter (Linux x64) no container; usar `ezdxf.addons.odafc`.
-- Testar execução headless (`QT_QPA_PLATFORM=offscreen` ou `xvfb-run`).
-- Conferir os termos de licença da ODA para uso em servidor público.
+- DWG R13 a 2018 (AC1012–AC1032); o mais novo que o LibreDWG lê é o 2018.
+- Conversão em processo separado: 60 s, 256 MB, pasta temporária em RAM (`/dev/shm`),
+  DXF gerado até 80 MB. IMAGE e nuvem de pontos ignoradas; objetos do Civil 3D não vêm.
+- DWG até 2004: o LibreDWG grava texto UTF-8 num DXF que se declara em codepage →
+  `corrigir_texto` regrava com escapes `\U+XXXX` (senão “Área” vira “Ã\x81rea”).
+- Coordenadas locais não são aceitas (decisão do usuário: exigiria ajuste manual).
+- O teste achou bug no leitor DXF (entidade sem layer, ex. SECTIONOBJECT) — corrigido.
 
-**Aceite:** um DWG real do curso converte nos dois sentidos; tempo e memória dentro do Render Free.
+**Teste (2026-10-07):** planialtimétrico real AC1032 (UTM 22S) do usuário: 0,3 s, 40 pontos,
+91 linhas, 21 polígonos, 105 textos, 11 layers, acentos e atributos de bloco corretos.
+**Pendente:** primeiro build no Render (compilação não testada localmente: sem Docker/WSL).
+
+**Aceite:** DWG real importa no ar (Render) com o mesmo resultado do teste local.
 
 ---
 

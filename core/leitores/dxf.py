@@ -110,6 +110,9 @@ def _coletar(msp, camadas: dict[str, Camada], dist_curva: float):
 
     for e in msp:
         t = e.dxftype()
+        if not e.dxf.is_supported("layer"):     # ex.: SECTIONOBJECT (plano de corte), sem layer
+            ignoradas[t] += 1
+            continue
         layer = e.dxf.layer
         cam = camadas.setdefault(layer, Camada(layer))
         est = _estilo(e, cam.estilo)
@@ -190,7 +193,8 @@ def _associar_textos(brutas: list[Bruta], tolerancia: float) -> list[Bruta]:
     return [b for i, b in enumerate(brutas) if i not in usados]
 
 
-def ler_dxf(dados: bytes, sistema: SistemaRef) -> Projeto:
+def ler_dxf(dados: bytes, sistema: SistemaRef, origem: str = "DXF") -> Projeto:
+    """`origem` só muda o texto das mensagens (o DWG chega aqui já convertido em DXF)."""
     try:
         doc, _auditor = recover.read(io.BytesIO(dados))
     except (IOError, ezdxf.DXFStructureError) as ex:
@@ -206,7 +210,7 @@ def ler_dxf(dados: bytes, sistema: SistemaRef) -> Projeto:
     tol = TOLERANCIA_TEXTO_M / M_POR_GRAU if geo else TOLERANCIA_TEXTO_M
     brutas = _associar_textos(brutas, tol)
 
-    proj = montar_projeto(sistema, brutas, camadas, "DXF")
+    proj = montar_projeto(sistema, brutas, camadas, origem)
     if ignoradas:
         lista = ", ".join(f"{k} ({v})" for k, v in ignoradas.most_common())
         proj.avisos.append(f"Entidades não convertidas: {lista}.")

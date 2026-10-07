@@ -43,7 +43,7 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
   A Privacidade troca o texto de publicidade sozinha conforme a variável. Sem anúncio sobre o mapa.
 - Build Filters do Render ignoram `docs/**`, `tests/**`, `README.md`, `CLAUDE.md` e
   `PLANO_CONVERSOR.md` (commits só de documentação não geram deploy).
-- Entradas: DXF, DWG, KML/KMZ, SHP (.zip), SIGEF (.ods). Saídas: DXF, DWG, KML/KMZ, SHP.
+- Entradas: DXF, DWG, KML/KMZ, SHP (.zip), SIGEF (.ods), TXT/CSV. Saídas: DXF, KML/KMZ, SHP.
 - SIRGAS 2000 é o datum padrão; KML entra e sai em WGS84 geográfico.
 - UTM exige fuso e hemisfério informados pelo usuário (entrada e saída).
   **UTM nunca é saída para KML.**
@@ -51,7 +51,11 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
   ícone de círculo (não o padrão); texto atrelado a ponto vira rótulo, sem ícone.
 - DXF/DWG → SHP: três shapes (pontos, linhas, polígonos) com campo `LAYER`,
   `.prj` e `.cpg` (UTF-8), entregues em ZIP.
-- DXF é o formato nativo; DWG entra/sai via ODA File Converter (Etapa 5).
+- DXF é o formato nativo. **DWG só entra** (Etapa 5): `core/leitores/dwg.py` chama o
+  `dwg2dxf` do GNU LibreDWG (GPLv3) como processo separado (60 s, 256 MB, pasta temporária
+  em RAM) e passa o DXF ao `ler_dxf`. Render: compilado no `Dockerfile` (versão e SHA-256
+  fixos). Windows: `ferramentas/libredwg/dwg2dxf.exe` + DLLs (fora do git); ou variável
+  `DWG2DXF`. ODA File Converter descartado (licença comercial paga).
 - SIGEF: só as abas `perimetro_N` são lidas (geometria); a aba `identificacao`
   (nome, CPF etc.) **não é lida**. Nada gravado em disco.
 - `tests/dados/SIGEF.ods` fica fora do git (pode conter dados reais); versionar só
@@ -81,8 +85,8 @@ Fluxo: leitor → modelo interno (SIRGAS 2000 geográfico, float64) → visualiz
 - Tela: **formato primeiro** (ex.: Entrada DXF → Saída KML), depois o sistema de coordenadas.
   KML (entrada e saída) trava o sistema em geodésicas; SIGEF usa o sistema da planilha;
   SHP usa o .prj (o sistema escolhido só vale sem .prj).
-- 5 entradas (DXF, KML/KMZ, SHP, SIGEF, TXT/CSV) e 3 saídas (DXF, KML/KMZ, SHP).
-  **DWG fora de vez** (decisão de 2026-10-02): salvar como DXF no CAD.
+- 6 entradas (DXF, DWG, KML/KMZ, SHP, SIGEF, TXT/CSV) e 3 saídas (DXF, KML/KMZ, SHP).
+  DWG voltou em 2026-10-07, só entrada (LibreDWG); desenhos em coordenadas locais não são aceitos.
 - TXT/CSV (`core/leitores/txt.py`, Etapa 8): usuário aponta as colunas (nome, E/lon, N/lat,
   h, código) num painel que aparece após o upload; separador e cabeçalho detectados e
   corrigíveis. Sistemas: UTM, geodésicas decimais ou **gg,mmss** (opção extra só para TXT;

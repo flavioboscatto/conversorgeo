@@ -40,7 +40,7 @@ def cabecalho(atual: str) -> None:
     with ui.header(fixed=False).classes("items-center text-grey-10 gap-x-6 gap-y-0 flex-wrap"):
         with ui.link(target="/").classes("no-underline text-grey-10"):
             ui.label("Conversor Geo").classes("text-h6")
-        ui.label("DXF · KML/KMZ · Shapefile · SIGEF · TXT/CSV").classes("text-caption")
+        ui.label("DXF · DWG · KML/KMZ · Shapefile · SIGEF · TXT/CSV").classes("text-caption")
         ui.space()
         with ui.row().classes("gap-x-4 gap-y-0 flex-wrap"):
             for caminho, rotulo in PAGINAS:

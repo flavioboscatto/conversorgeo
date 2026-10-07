@@ -10,6 +10,7 @@ from core.escritores.dxf import escrever_dxf
 from core.escritores.kml import escrever_kml
 from core.escritores.shp import escrever_shp
 from core.leitores import ErroLeitura
+from core.leitores.dwg import ler_dwg
 from core.leitores.dxf import ler_dxf
 from core.leitores.kml import ler_kml
 from core.leitores.shp import ler_shp
@@ -19,6 +20,7 @@ from core.modelo import Projeto
 
 FORMATOS_ENTRADA = {
     "DXF": "DXF",
+    "DWG": "DWG (AutoCAD, só entrada)",
     "KML": "KML / KMZ",
     "SHP": "Shapefile (.zip)",
     "SIGEF": "Planilha SIGEF (.ods)",
@@ -29,7 +31,7 @@ FORMATOS_SAIDA = {
     "KML": "KML / KMZ",
     "SHP": "Shapefile (.zip)",
 }
-EXTENSOES = {"DXF": ".dxf", "KML": ".kml,.kmz", "SHP": ".zip", "SIGEF": ".ods",
+EXTENSOES = {"DXF": ".dxf", "DWG": ".dwg", "KML": ".kml,.kmz", "SHP": ".zip", "SIGEF": ".ods",
              "TXT": ".txt,.csv"}
 SO_GEODESICOS = {"KML"}          # KML é sempre geodésico: nunca UTM
 SISTEMA_DO_ARQUIVO = {"SIGEF"}   # sistema vem de dentro do arquivo
@@ -38,12 +40,14 @@ COM_GMS = {"TXT"}                # aceita geodésicas no formato gg,mmss
 
 def ler(formato: str, dados: bytes, sistema: SistemaRef,
         config_txt: ConfigTxt | None = None) -> Projeto:
-    """`sistema` é usado no DXF, no TXT e no Shapefile sem .prj; ignorado nos demais.
+    """`sistema` é usado no DXF/DWG, no TXT e no Shapefile sem .prj; ignorado nos demais.
     `config_txt` (colunas, separador, geometria) só vale para o TXT/CSV."""
     if not dados:
         raise ErroLeitura("O arquivo está vazio.")
     if formato == "DXF":
         return ler_dxf(dados, sistema)
+    if formato == "DWG":
+        return ler_dwg(dados, sistema)
     if formato == "KML":
         return ler_kml(dados)
     if formato == "SHP":

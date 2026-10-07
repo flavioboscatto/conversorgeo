@@ -1,6 +1,28 @@
 # ==============================================================================
 # Conversor Geo — imagem para o Render (plano Free)
 # ==============================================================================
+
+# --- Etapa 1: compila o dwg2dxf do GNU LibreDWG (GPLv3) para a entrada DWG ---
+# Fica separada para o Docker reaproveitar quando só o código do app muda.
+# Para trocar de versão: nova versão e SHA-256 do .tar.xz de https://ftp.gnu.org/gnu/libredwg/
+FROM python:3.12-slim AS libredwg
+ARG LIBREDWG_VERSAO=0.14
+ARG LIBREDWG_SHA256=62ebb73b984f865960f20ed26619ea5f8789d5e3fd088fa40a2598384da81275
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential curl ca-certificates xz-utils \
+    && curl -fsSL --retry 3 -o /tmp/libredwg.tar.xz \
+       "https://ftp.gnu.org/gnu/libredwg/libredwg-${LIBREDWG_VERSAO}.tar.xz" \
+    && echo "${LIBREDWG_SHA256}  /tmp/libredwg.tar.xz" | sha256sum -c - \
+    && tar -xJf /tmp/libredwg.tar.xz -C /tmp \
+    && cd "/tmp/libredwg-${LIBREDWG_VERSAO}" \
+    && ./configure --disable-shared --enable-static --disable-bindings --disable-python \
+       --disable-docs --disable-werror \
+    && make -j"$(nproc)" -C src \
+    && make -j"$(nproc)" -C programs dwg2dxf \
+    && install -m 755 programs/dwg2dxf /usr/local/bin/dwg2dxf \
+    && /usr/local/bin/dwg2dxf --version
+
+# --- Etapa 2: o app ---
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -8,15 +30,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# --- Etapa 5: ODA File Converter (DWG <-> DXF) ---
-# Baixar o .deb Linux x64 em https://www.opendesign.com/guestfiles/oda_file_converter
-# (conferir a licença), informar a URL em ODA_DEB_URL e descomentar o bloco abaixo.
-# ARG ODA_DEB_URL=""
-# RUN apt-get update && apt-get install -y --no-install-recommends wget xvfb \
-#     && wget -q "$ODA_DEB_URL" -O /tmp/oda.deb \
-#     && apt-get install -y /tmp/oda.deb && rm /tmp/oda.deb \
-#     && rm -rf /var/lib/apt/lists/*
-# ENV QT_QPA_PLATFORM=offscreen
+COPY --from=libredwg /usr/local/bin/dwg2dxf /usr/local/bin/dwg2dxf
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

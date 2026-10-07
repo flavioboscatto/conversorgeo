@@ -32,6 +32,8 @@ NOTAS_ENTRADA = {
     "SIGEF": "O sistema é lido da própria planilha (Tipo de Coordenada).",
     "SHP": "O sistema é lido do .prj; o escolhido aqui só vale se o ZIP não tiver .prj.",
     "DXF": "Informe o sistema em que o desenho foi feito.",
+    "DWG": "Informe o sistema em que o desenho foi feito. Aceita até o formato AutoCAD 2018; "
+           "imagens e nuvens de pontos anexadas são ignoradas.",
     "TXT": "Geodésicas: sul e oeste com sinal negativo (ex.: -27,3543092 = 27°35'43,092\" S). "
            "Depois de enviar, aponte as colunas.",
 }
@@ -93,8 +95,8 @@ def _resumo_txt(r: dict) -> str:
 
 
 def construir():
-    layout.preparar("Converta levantamentos entre DXF, KML/KMZ e Shapefile, leia a planilha do "
-                    "SIGEF e pontos em TXT/CSV, confira sobre imagem de satélite e exporte "
+    layout.preparar("Converta levantamentos entre DXF, KML/KMZ e Shapefile, leia DWG, a planilha "
+                    "do SIGEF e pontos em TXT/CSV, confira sobre imagem de satélite e exporte "
                     "croqui de localização. SIRGAS 2000, geodésicas e UTM.")
     mapa_mod.instalar()
     layout.cabecalho("/")
